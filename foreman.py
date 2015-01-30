@@ -12,6 +12,7 @@ import urllib2
 import base64
 import json
 import getopt
+import os
 
 # Configuration
 config = {
@@ -94,14 +95,18 @@ class Main(object):
 
     def __init__(self, argv):
 
-        self.script_name = argv[0]
+        self.script_name = os.path.basename(argv[0])
         self.argv = argv[1:]
         self.parse_options()
 
     def parse_options(self):
 
         try:
-            options, args = getopt.gnu_getopt(self.argv, "w:c:h", ['help'])
+            options, args = getopt.getopt(self.argv, "w:c:h", [
+                'help',
+                'warning=',
+                'critical='
+                ])
 
         except getopt.GetoptError:
             self.usage()
@@ -109,15 +114,23 @@ class Main(object):
         for opt, arg in options:
             if opt in ('-h', '--help'):
                 self.usage()
-            elif opt == '-w':
+            elif opt in ('-w', '--warning'):
                 config['warning'] = int(arg)
-            elif opt == '-c':
+            elif opt in ('-c', '--critical'):
                 config['critical'] = int(arg)
             else:
                 self.usage()
 
+        if config['warning'] > config['critical']:
+            print 'Error: WARNING threshold is higher than CRITICAL threshold.'
+            self.die(3)
+
     def usage(self):
-        print 'Usage: %s -w <warning> -c <critical>' % self.script_name
+        print 'Usage: %s [OPTION]' % self.script_name
+        print 'AVAILABLE OPTIONS:'
+        print '-h\tPrint this help summary page'
+        print '-w\tWARNING threshold (default: 150)'
+        print '-c\tCRITICAL threshold (default: 200)'
         self.die(3)
 
     def run(self):
