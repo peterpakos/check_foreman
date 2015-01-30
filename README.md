@@ -1,0 +1,1 @@
+This Nagios plug-in is made to monitor Foreman server by accessing the Foreman API.
