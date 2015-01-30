@@ -104,7 +104,7 @@ class Main(object):
             options, args = getopt.gnu_getopt(self.argv, "w:c:h", ['help'])
 
         except getopt.GetoptError:
-            self.die(3)
+            self.usage()
 
         for opt, arg in options:
             if opt in ('-h', '--help'):
@@ -114,12 +114,11 @@ class Main(object):
             elif opt == '-c':
                 config['critical'] = int(arg)
             else:
-                print "ERROR, exiting..."
-                sys.exit()
+                self.usage()
 
     def usage(self):
         print 'Usage: %s -w <warning> -c <critical>' % self.script_name
-        self.die(0)
+        self.die(3)
 
     def run(self):
         foreman = ForemanServer(
