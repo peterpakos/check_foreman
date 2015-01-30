@@ -43,7 +43,15 @@ class ForemanServer(object):
             config['api_pass']
             )).replace('\n', '')
         request.add_header("Authorization", "Basic %s" % base64string)
-        result = urllib2.urlopen(request)
+        try:
+            result = urllib2.urlopen(request)
+        except urllib2.HTTPError, err:
+            print "HTTP Error Code %s (%s)" % (err.code, err.reason)
+            sys.exit(3)
+        except urllib2.URLError, err:
+            print "URL Error (%s)" % err.reason
+            sys.exit(3)
+
         return json.load(result)
 
     # Fetch number of vmware hosts
