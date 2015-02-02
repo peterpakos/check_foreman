@@ -15,10 +15,10 @@ import os
 
 # Global config class (uninstantiated)
 class config:
-    app_version = '0.1'
-    api_url = 'http://foreman.shdc.wandisco.com/api/v2'
-    api_user = 'api'
-    api_pass = 'Lood2ooPhi'
+    app_version = "0.1"
+    api_url = "http://foreman.shdc.wandisco.com/api/v2"
+    api_user = "api"
+    api_pass = "Lood2ooPhi"
     warning = 150
     critical = 200
 
@@ -37,7 +37,7 @@ class ForemanServer(object):
     # Encode user:pass in headers and get json data
     def get_json_data(self, url):
         request = urllib2.Request(url)
-        base64string = base64.encodestring('%s:%s' % (
+        base64string = base64.encodestring("%s:%s" % (
             config.api_user,
             config.api_pass
             )).replace('\n', '')
@@ -57,23 +57,23 @@ class ForemanServer(object):
         return json.load(result)
 
     # Fetch number of vmware hosts
-    def fetch_vmware_hosts(self, url='/hosts?search=compute_resource_id=6'):
+    def fetch_vmware_hosts(self, url="/hosts?search=compute_resource_id=6"):
         url = self.api_url + url
         data = self.get_json_data(url)
         try:
             return int(data['subtotal'])
-        except TypeError:
-            print "Incorrect data type returned by remote host"
+        except TypeError as err:
+            print "Incorrect data type returned by remote host (%s)" % err
             app.die(3)
 
     # Fetch number of total hosts
-    def fetch_total_hosts(self, url='/dashboard'):
+    def fetch_total_hosts(self, url="/dashboard"):
         url = self.api_url + url
         data = self.get_json_data(url)
         try:
             return int(data['total_hosts'])
-        except TypeError:
-            print "Incorrect data type returned by remote host"
+        except TypeError as err:
+            print "Incorrect data type returned by remote host (%s)" % err
             app.die(3)
 
 
@@ -146,7 +146,7 @@ class Main(object):
             elif opt in ('-c', '--critical'):
                 try:
                     config.critical = int(arg)
-                except:
+                except ValueError:
                     print "Incorrect value of CRITICAL threshold: %s" % arg
                     self.die(3)
 
