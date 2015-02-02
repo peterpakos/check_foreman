@@ -123,9 +123,19 @@ class Main(object):
             if opt in ('-h', '--help'):
                 self.usage()
             elif opt in ('-w', '--warning'):
-                config['warning'] = int(arg)
+                try:
+                    config['warning'] = int(arg)
+                except ValueError:
+                    print "Incorrect value of WARNING threshold: %s" % arg
+                    self.die(3)
+
             elif opt in ('-c', '--critical'):
-                config['critical'] = int(arg)
+                try:
+                    config['critical'] = int(arg)
+                except:
+                    print "Incorrect value of CRITICAL threshold: %s" % arg
+                    self.die(3)
+
             else:
                 self.usage()
 
