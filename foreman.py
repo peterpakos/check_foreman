@@ -105,6 +105,8 @@ class Main(object):
 
         self.script_name = os.path.basename(argv[0])
         self.argv = argv[1:]
+        self.default_warning = config['warning']
+        self.default_critical = config['critical']
         self.parse_options()
 
     def parse_options(self):
@@ -147,8 +149,8 @@ class Main(object):
         print 'Usage: %s [OPTION]' % self.script_name
         print 'AVAILABLE OPTIONS:'
         print '-h\tPrint this help summary page'
-        print '-w\tWARNING threshold (default: 150)'
-        print '-c\tCRITICAL threshold (default: 200)'
+        print '-w\tWARNING threshold (default: %i)' % self.default_warning
+        print '-c\tCRITICAL threshold (default: %i)' % self.default_critical
         self.die(3)
 
     def run(self):
