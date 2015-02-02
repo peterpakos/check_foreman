@@ -2,7 +2,7 @@
 #
 # Nagios plug-in to monitor Foreman hosts
 #
-# Version 0.1
+version = '0.1'
 #
 # Author: Peter Pakos <peter.pakos@wandisco.com>
 # Copyright (C) 2015 WANdisco
@@ -104,6 +104,7 @@ class Main(object):
     def __init__(self, argv):
 
         self.script_name = os.path.basename(argv[0])
+        self.script_version = version
         self.argv = argv[1:]
         self.default_warning = config['warning']
         self.default_critical = config['critical']
@@ -146,7 +147,8 @@ class Main(object):
             self.die(3)
 
     def usage(self):
-        print 'Usage: %s [OPTION]' % self.script_name
+        print '%s %s' % (self.script_name, self.script_version)
+        print 'Usage: %s [OPTIONS]' % self.script_name
         print 'AVAILABLE OPTIONS:'
         print '-h\tPrint this help summary page'
         print '-w\tWARNING threshold (default: %i)' % self.default_warning
