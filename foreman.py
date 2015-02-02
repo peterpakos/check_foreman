@@ -45,10 +45,10 @@ class ForemanServer(object):
         request.add_header("Authorization", "Basic %s" % base64string)
         try:
             result = urllib2.urlopen(request)
-        except urllib2.HTTPError, err:
+        except urllib2.HTTPError as err:
             print "HTTP Error Code %s (%s)" % (err.code, err.reason)
             app.die(3)
-        except urllib2.URLError, err:
+        except urllib2.URLError as err:
             print "URL Error (%s)" % err.reason
             app.die(3)
         except ValueError:
@@ -154,16 +154,16 @@ class Main(object):
                 self.usage()
 
         if config['warning'] > config['critical']:
-            print 'Error: WARNING threshold is higher than CRITICAL threshold.'
+            print "Error: WARNING threshold is higher than CRITICAL threshold."
             self.die(3)
 
     def usage(self):
-        print '%s %s' % (self.script_name, self.script_version)
-        print 'Usage: %s [OPTIONS]' % self.script_name
-        print 'AVAILABLE OPTIONS:'
-        print '-h\tPrint this help summary page'
-        print '-w\tWARNING threshold (default: %i)' % self.default_warning
-        print '-c\tCRITICAL threshold (default: %i)' % self.default_critical
+        print "%s %s" % (self.script_name, self.script_version)
+        print "Usage: %s [OPTIONS]" % self.script_name
+        print "AVAILABLE OPTIONS:"
+        print "-h\tPrint this help summary page"
+        print "-w\tWARNING threshold (default: %i)" % self.default_warning
+        print "-c\tCRITICAL threshold (default: %i)" % self.default_critical
         self.die(3)
 
     def run(self):
@@ -183,7 +183,7 @@ class Main(object):
         status.display()
         self.die(status.code)
 
-    def die(self, code):
+    def die(self, code=0):
         sys.exit(code)
 
 # Run the script...
