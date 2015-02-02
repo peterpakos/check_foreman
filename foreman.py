@@ -47,10 +47,13 @@ class ForemanServer(object):
             result = urllib2.urlopen(request)
         except urllib2.HTTPError, err:
             print "HTTP Error Code %s (%s)" % (err.code, err.reason)
-            sys.exit(3)
+            app.die(3)
         except urllib2.URLError, err:
             print "URL Error (%s)" % err.reason
-            sys.exit(3)
+            app.die(3)
+        except ValueError:
+            print "Incorrect API URL"
+            app.die(3)
 
         return json.load(result)
 
@@ -58,13 +61,21 @@ class ForemanServer(object):
     def fetch_vmware_hosts(self, url='/hosts?search=compute_resource_id=6'):
         url = self.api_url + url
         data = self.get_json_data(url)
-        return int(data['subtotal'])
+        try:
+            return int(data['subtotal'])
+        except TypeError:
+            print "Incorrect data type returned by remote host"
+            app.die(3)
 
     # Fetch number of total hosts
     def fetch_total_hosts(self, url='/dashboard'):
         url = self.api_url + url
         data = self.get_json_data(url)
-        return int(data['total_hosts'])
+        try:
+            return int(data['total_hosts'])
+        except TypeError:
+            print "Incorrect data type returned by remote host"
+            app.die(3)
 
 
 # Class Status
