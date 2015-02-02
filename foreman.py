@@ -2,8 +2,6 @@
 #
 # Nagios plug-in to monitor Foreman hosts
 #
-version = '0.1'
-#
 # Author: Peter Pakos <peter.pakos@wandisco.com>
 # Copyright (C) 2015 WANdisco
 
@@ -14,20 +12,21 @@ import json
 import getopt
 import os
 
-# Configuration
-config = {
-    'api_url': 'http://foreman.shdc.wandisco.com/api/v2',
-    'api_user': 'api',
-    'api_pass': 'Lood2ooPhi',
-    'warning': 150,
-    'critical': 200
-    }
+
+# Global config class (uninstantiated)
+class config:
+    app_version = '0.1'
+    api_url = 'http://foreman.shdc.wandisco.com/api/v2'
+    api_user = 'api'
+    api_pass = 'Lood2ooPhi'
+    warning = 150
+    critical = 200
 
 
 # Class ForemanServer
 class ForemanServer(object):
 
-    # Initialize object
+    # Constructor method
     def __init__(self, api_url, api_user, api_pass):
         self.api_url = api_url
         self.api_user = api_user
@@ -35,12 +34,12 @@ class ForemanServer(object):
         self.vmware_hosts = self.fetch_vmware_hosts()
         self.total_hosts = self.fetch_total_hosts()
 
-    # Function encoding user:pass in headers and getting json data
+    # Encode user:pass in headers and get json data
     def get_json_data(self, url):
         request = urllib2.Request(url)
         base64string = base64.encodestring('%s:%s' % (
-            config['api_user'],
-            config['api_pass']
+            config.api_user,
+            config.api_pass
             )).replace('\n', '')
         request.add_header("Authorization", "Basic %s" % base64string)
         try:
@@ -81,7 +80,7 @@ class ForemanServer(object):
 # Class Status
 class Status(object):
 
-    # Initialize object
+    # Constructor method
     def __init__(self, warning, critical, vmware_hosts, total_hosts):
         self.vmware_hosts = vmware_hosts
         self.total_hosts = total_hosts
@@ -112,19 +111,20 @@ class Status(object):
 # Main class
 class Main(object):
 
-    def __init__(self, argv):
+    # Constructor method
+    def __init__(self):
 
-        self.script_name = os.path.basename(argv[0])
-        self.script_version = version
-        self.argv = argv[1:]
-        self.default_warning = config['warning']
-        self.default_critical = config['critical']
+        self.app_name = os.path.basename(sys.argv[0])
+        self.app_version = config.app_version
+        self.default_warning = config.warning
+        self.default_critical = config.critical
         self.parse_options()
 
+    # Parse arguments
     def parse_options(self):
 
         try:
-            options, args = getopt.getopt(self.argv, "w:c:h", [
+            options, args = getopt.getopt(sys.argv[1:], "w:c:h", [
                 'help',
                 'warning=',
                 'critical='
@@ -138,14 +138,14 @@ class Main(object):
                 self.usage()
             elif opt in ('-w', '--warning'):
                 try:
-                    config['warning'] = int(arg)
+                    config.warning = int(arg)
                 except ValueError:
                     print "Incorrect value of WARNING threshold: %s" % arg
                     self.die(3)
 
             elif opt in ('-c', '--critical'):
                 try:
-                    config['critical'] = int(arg)
+                    config.critical = int(arg)
                 except:
                     print "Incorrect value of CRITICAL threshold: %s" % arg
                     self.die(3)
@@ -153,29 +153,31 @@ class Main(object):
             else:
                 self.usage()
 
-        if config['warning'] > config['critical']:
+        if config.warning > config.critical:
             print "Error: WARNING threshold is higher than CRITICAL threshold."
             self.die(3)
 
+    # Display help page
     def usage(self):
-        print "%s %s" % (self.script_name, self.script_version)
-        print "Usage: %s [OPTIONS]" % self.script_name
+        print "%s %s" % (self.app_name, self.app_version)
+        print "Usage: %s [OPTIONS]" % self.app_name
         print "AVAILABLE OPTIONS:"
         print "-h\tPrint this help summary page"
         print "-w\tWARNING threshold (default: %i)" % self.default_warning
         print "-c\tCRITICAL threshold (default: %i)" % self.default_critical
         self.die(3)
 
+    # App code to be run
     def run(self):
         foreman = ForemanServer(
-            config['api_url'],
-            config['api_user'],
-            config['api_pass']
+            config.api_url,
+            config.api_user,
+            config.api_pass
         )
 
         status = Status(
-            config['warning'],
-            config['critical'],
+            config.warning,
+            config.critical,
             foreman.vmware_hosts,
             foreman.total_hosts
         )
@@ -183,10 +185,11 @@ class Main(object):
         status.display()
         self.die(status.code)
 
+    # Exit app
     def die(self, code=0):
         sys.exit(code)
 
-# Run the script...
+# Instantiate main class and run it
 if __name__ == '__main__':
-    app = Main(sys.argv)
+    app = Main()
     app.run()
