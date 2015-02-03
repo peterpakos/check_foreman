@@ -255,9 +255,15 @@ class Main(object):
                 status = 'UNKNOWN'
                 code = 3
 
-            message = "%s - VMware hosts: %s (Total %s)" % (
+            message = "%s - VMware hosts: %i, Total hosts: %i|'VMware hosts'=%i;%i;%i;%i;%i 'Total hosts'=%i" % (
                 status,
                 vmware_hosts,
+                total_hosts,
+                vmware_hosts,
+                config.host_warning,
+                config.host_critical,
+                0,
+                500,
                 total_hosts
             )
 
@@ -289,6 +295,23 @@ class Main(object):
 
             if len(datastores) > 0:
                 message = "%s - %s" % (status, ', '.join(mlist))
+                mlist = []
+                for ds, v in sorted(datastores.iteritems()):
+                    free = v['free']
+                    total = v['total']
+                    mlist.append("'%s'=%.0fGB;%i;%i;%i;%i" % (
+                        ds,
+                        free,
+                        config.disk_warning,
+                        config.disk_critical,
+                        0,
+                        total
+                    ))
+                message = "%s|%s" % (
+                    message,
+                    ' '.join(mlist)
+                )
+
             else:
                 self.die(3, "%s - No datastores found" % status)
 
