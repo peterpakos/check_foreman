@@ -26,10 +26,6 @@ class config:
     app_version = "0.1"
     url = "https://foreman.shdc.wandisco.com"
     api_url = url + '/api/v2'
-    login_url = url + '/users/login'
-    ds_url = url + '/compute_profiles/1' \
-                   '/compute_resources/6-SHDC_ALM_VC' \
-                   '/compute_attributes/new'
     api_user = "api"
     api_pass = "Lood2ooPhi"
     host_warning = 150
@@ -62,14 +58,19 @@ class ForemanServer(object):
         }
 
         with session() as s:
-            s.post(
-                config.login_url,
-                headers=headers,
-                data=payload,
-                verify=False
-            )
+            try:
+                s.post(
+                    config.url + '/users/login',
+                    headers=headers,
+                    data=payload,
+                    verify=False
+                )
+            except:
+                app.die(3, "Problem with logging in to Foreman")
             page = s.get(
-                config.ds_url,
+                config.url + '/compute_profiles/1'
+                             '/compute_resources/6-SHDC_ALM_VC'
+                             '/compute_attributes/new',
                 headers=headers,
                 verify=False
             )
@@ -201,9 +202,9 @@ class Main(object):
                 config.disk_critical = critical
 
         if config.host_warning > config.host_critical:
-            self.die(3, "Error: WARNING is higher than CRITICAL")
+            self.die(3, "WARNING threshold is higher than CRITICAL")
         if config.disk_warning < config.disk_critical:
-            self.die(3, "Error: WARNING is lower than CRITICAL")
+            self.die(3, "WARNING threshold is lower than CRITICAL")
 
         return test
 
@@ -264,6 +265,7 @@ class Main(object):
             datastores = foreman.fetch_datastore_info()
             code = -1
             mlist = []
+            status = 'UNKNOWN'
             for ds, v in sorted(datastores.iteritems()):
                 free = v['free']
                 if 0 <= free and free <= config.disk_critical:
@@ -285,16 +287,17 @@ class Main(object):
 
                 mlist.append("%s: %.0fGB" % (ds, free))
 
-            message = "%s - %s" % (
-                status,
-                ', '.join(mlist)
-            )
+            if len(datastores) > 0:
+                message = "%s - %s" % (status, ', '.join(mlist))
+            else:
+                self.die(3, "%s - No datastores found" % status)
+
         else:
             self.die(3, "Incorrect test type, terminating...")
 
         self.die(code, message)
 
-    # Exit app
+    # Exit app with code and optional message
     def die(self, code=0, message=None):
         if message is not None:
             print message
