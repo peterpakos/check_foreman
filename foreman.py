@@ -5,16 +5,20 @@
 # Author: Peter Pakos <peter.pakos@wandisco.com>
 # Copyright (C) 2015 WANdisco
 
-import sys
-import urllib2
-import base64
-import json
-import getopt
-import os
-from requests import session
-from lxml import html
-from requests.packages.urllib3 import disable_warnings
-disable_warnings()
+try:
+    import sys
+    import urllib2
+    import base64
+    import json
+    import getopt
+    import os
+    from requests import session
+    from lxml import html
+    from requests.packages.urllib3 import disable_warnings
+    disable_warnings()
+except ImportError as err:
+    print "Import Error: %s" % err
+    sys.exit(3)
 
 
 # Global config class (uninstantiated)
@@ -137,6 +141,10 @@ class Main(object):
 
         self.app_name = os.path.basename(sys.argv[0])
         self.app_version = config.app_version
+        self.default_host_warning = config.host_warning
+        self.default_host_critical = config.host_critical
+        self.default_disk_warning = config.disk_warning
+        self.default_disk_critical = config.disk_critical
         self.test = self.parse_options()
 
     # Parse arguments and select test to be run
@@ -145,11 +153,12 @@ class Main(object):
         warning = None
         critical = None
         try:
-            options, args = getopt.getopt(sys.argv[1:], "t:w:c:h", [
+            options, args = getopt.getopt(sys.argv[1:], "t:w:c:hV", [
                 'help',
                 'warning=',
                 'critical=',
-                'test='
+                'test=',
+                'version'
             ])
 
         except getopt.GetoptError:
@@ -165,6 +174,10 @@ class Main(object):
                     self.die(3, "Unknown test %s, terminating..." % arg)
             if opt in ('-h', '--help'):
                 self.usage()
+            if opt in ('-V', '--version'):
+                self.die(3, "%s version %s" % (
+                    self.app_name, self.app_version)
+                )
             elif opt in ('-w', '--warning'):
                 try:
                     warning = int(arg)
@@ -200,9 +213,18 @@ class Main(object):
         print "Usage: %s [OPTIONS]" % self.app_name
         print "AVAILABLE OPTIONS:"
         print "-t host/disk\tChoose test to be run (default: host)"
+        print "-w\t\tWARNING threshold"
+        print "\t\t(Default host: %i, disk: %iGB)" % (
+            self.default_host_warning,
+            self.default_disk_warning
+        )
+        print "-c\t\tCRITICAL threshold"
+        print "\t\t(Default host: %i, disk: %iGB)" % (
+            self.default_host_critical,
+            self.default_disk_critical
+        )
         print "-h\t\tPrint this help summary page"
-        print "-w\t\tWARNING threshold (default: %i)" % self.default_warning
-        print "-c\t\tCRITICAL threshold (default: %i)" % self.default_critical
+        print "-V\t\tPrint version number"
         self.die(3)
 
     # App code to be run
@@ -261,7 +283,7 @@ class Main(object):
                     status = 'UNKNOWN'
                     code = 3
 
-                mlist.append("%s %.0fGB" % (ds, free))
+                mlist.append("%s: %.0fGB" % (ds, free))
 
             message = "%s - %s" % (
                 status,
