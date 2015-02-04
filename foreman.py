@@ -24,10 +24,6 @@ except ImportError as err:
 # Global config class (uninstantiated)
 class config:
     app_version = "0.1"
-    url = "https://foreman.shdc.wandisco.com"
-    api_url = url + '/api/v2'
-    api_user = "api"
-    api_pass = "Lood2ooPhi"
     host_warning = 150
     host_critical = 200
     disk_warning = 100
@@ -38,17 +34,18 @@ class config:
 class ForemanServer(object):
 
     # Constructor method
-    def __init__(self, api_url, api_user, api_pass):
-        self.api_url = api_url
-        self.api_user = api_user
-        self.api_pass = api_pass
+    def __init__(self, foreman_url, foreman_user, foreman_pass):
+        self.foreman_url = foreman_url
+        self.foreman_api_url = foreman_url + '/api/v2'
+        self.foreman_user = foreman_user
+        self.foreman_pass = foreman_pass
 
     def fetch_datastore_info(self):
         payload = {
             'authenticity_token':
             'Zq7o/8Ap9F0uSWLTUcEx/4ezcsz+HXIQ76LoE/A7jDc=',
-            'login[login]': self.api_user,
-            'login[password]': self.api_pass
+            'login[login]': self.foreman_user,
+            'login[password]': self.foreman_pass
         }
 
         headers = {
@@ -60,17 +57,17 @@ class ForemanServer(object):
         with session() as s:
             try:
                 s.post(
-                    config.url + '/users/login',
+                    self.foreman_url + '/users/login',
                     headers=headers,
                     data=payload,
                     verify=False
                 )
             except:
-                app.die(3, "Problem with logging in to Foreman")
+                app.die(3, "Error: Problem with logging in to Foreman UI")
             page = s.get(
-                config.url + '/compute_profiles/1'
-                             '/compute_resources/6-SHDC_ALM_VC'
-                             '/compute_attributes/new',
+                self.foreman_url + '/compute_profiles/1'
+                                   '/compute_resources/6-SHDC_ALM_VC'
+                                   '/compute_attributes/new',
                 headers=headers,
                 verify=False
             )
@@ -100,9 +97,9 @@ class ForemanServer(object):
     def get_json_data(self, url):
         request = urllib2.Request(url)
         base64string = base64.encodestring("%s:%s" % (
-            config.api_user,
-            config.api_pass
-            )).replace('\n', '')
+            self.foreman_user,
+            self.foreman_pass
+        )).replace('\n', '')
         request.add_header("Authorization", "Basic %s" % base64string)
         try:
             result = urllib2.urlopen(request)
@@ -116,8 +113,8 @@ class ForemanServer(object):
         return json.load(result)
 
     # Fetch number of vmware hosts
-    def fetch_vmware_hosts(self, url="/hosts?search=compute_resource_id=6"):
-        url = self.api_url + url
+    def fetch_vmware_hosts(self):
+        url = self.foreman_api_url + "/hosts?search=compute_resource_id=6"
         data = self.get_json_data(url)
         try:
             return int(data['subtotal'])
@@ -125,8 +122,8 @@ class ForemanServer(object):
             app.die(3, "Unknown data type returned by remote host (%s)" % err)
 
     # Fetch number of total hosts
-    def fetch_total_hosts(self, url="/dashboard"):
-        url = self.api_url + url
+    def fetch_total_hosts(self):
+        url = self.foreman_api_url + "/dashboard"
         data = self.get_json_data(url)
         try:
             return int(data['total_hosts'])
@@ -146,6 +143,9 @@ class Main(object):
         self.default_host_critical = config.host_critical
         self.default_disk_warning = config.disk_warning
         self.default_disk_critical = config.disk_critical
+        self.foreman_url = None
+        self.foreman_user = None
+        self.foreman_pass = None
         self.test = self.parse_options()
 
     # Parse arguments and select test to be run
@@ -154,25 +154,34 @@ class Main(object):
         warning = None
         critical = None
         try:
-            options, args = getopt.getopt(sys.argv[1:], "t:w:c:hV", [
+            options, args = getopt.getopt(sys.argv[1:], "H:u:p:t:w:c:hV", [
                 'help',
                 'warning=',
                 'critical=',
                 'test=',
                 'version'
+                'host=',
+                'user=',
+                'pass='
             ])
 
         except getopt.GetoptError:
             self.usage()
 
         for opt, arg in options:
+            if opt in ('-H', '--host'):
+                self.foreman_url = arg
+            if opt in ('-u', '--user'):
+                self.foreman_user = arg
+            if opt in ('-p', '--pass'):
+                self.foreman_pass = arg
             if opt in ('-t', '--test'):
                 if arg == 'disk':
                     test = arg
                 elif arg == 'host':
                     test = arg
                 else:
-                    self.die(3, "Unknown test %s, terminating..." % arg)
+                    self.die(3, "Error: Unknown test %s" % arg)
             if opt in ('-h', '--help'):
                 self.usage()
             if opt in ('-V', '--version'):
@@ -183,12 +192,19 @@ class Main(object):
                 try:
                     warning = int(arg)
                 except ValueError:
-                    self.die(3, "Incorrect value of WARNING: %s" % arg)
+                    self.die(3, "Error: Incorrect value of WARNING: %s" % arg)
             elif opt in ('-c', '--critical'):
                 try:
                     critical = int(arg)
                 except ValueError:
-                    self.die(3, "Incorrect value of CRITICAL: %s" % arg)
+                    self.die(3, "Error: Incorrect value of CRITICAL: %s" % arg)
+
+        if self.foreman_url is None:
+            self.die(3, "Error: Foreman URL not specified")
+        if self.foreman_user is None:
+            self.die(3, "Error: Foreman user not specified")
+        if self.foreman_pass is None:
+            self.die(3, "Error: Foreman URL not specified")
 
         if test == 'host':
             if warning is not None:
@@ -202,9 +218,9 @@ class Main(object):
                 config.disk_critical = critical
 
         if config.host_warning > config.host_critical:
-            self.die(3, "WARNING threshold is higher than CRITICAL")
+            self.die(3, "Error: WARNING threshold is higher than CRITICAL")
         if config.disk_warning < config.disk_critical:
-            self.die(3, "WARNING threshold is lower than CRITICAL")
+            self.die(3, "Error: WARNING threshold is lower than CRITICAL")
 
         return test
 
@@ -213,6 +229,9 @@ class Main(object):
         print "%s %s" % (self.app_name, self.app_version)
         print "Usage: %s [OPTIONS]" % self.app_name
         print "AVAILABLE OPTIONS:"
+        print "-H <url>\tURL address of the Foreman server"
+        print "-u <user>\tForeman username"
+        print "-p <pass>\tForeman password"
         print "-t host/disk\tChoose test to be run (default: host)"
         print "-w\t\tWARNING threshold"
         print "\t\t(Default host: %i, disk: %iGB)" % (
@@ -232,9 +251,9 @@ class Main(object):
     def run(self):
 
         foreman = ForemanServer(
-            config.api_url,
-            config.api_user,
-            config.api_pass,
+            self.foreman_url,
+            self.foreman_user,
+            self.foreman_pass,
         )
 
         if self.test == 'host':
