@@ -255,10 +255,13 @@ class Main(object):
                 status = 'UNKNOWN'
                 code = 3
 
-            message = "%s - VMware hosts: %i, Total hosts: %i|'VMware hosts'=%i;%i;%i;%i;%i 'Total hosts'=%i" % (
+            message = "%s - VMware hosts: %i, Total hosts: %i" % (
                 status,
                 vmware_hosts,
-                total_hosts,
+                total_hosts
+            )
+            message = "%s|'VMware hosts'=%i;%i;%i;%i;%i 'Total hosts'=%i" % (
+                message,
                 vmware_hosts,
                 config.host_warning,
                 config.host_critical,
