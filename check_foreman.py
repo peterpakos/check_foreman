@@ -14,8 +14,6 @@ try:
     import os
     from requests import session
     from lxml import html
-    from requests.packages.urllib3 import disable_warnings
-    disable_warnings()
 except ImportError as err:
     print "Import Error: %s" % err
     sys.exit(3)
