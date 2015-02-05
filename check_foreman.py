@@ -21,7 +21,7 @@ except ImportError as err:
 
 # Global config class (uninstantiated)
 class config:
-    app_version = "0.1"
+    app_version = "1.0"
     host_warning = 150
     host_critical = 200
     disk_warning = 100
@@ -232,12 +232,12 @@ class Main(object):
         print "-p <pass>\tForeman password"
         print "-t host/disk\tChoose test to be run (default: host)"
         print "-w\t\tWARNING threshold"
-        print "\t\t(Default host: %i, disk: %iGB)" % (
+        print "\t\tdefault: %i (host), %iGB (disk)" % (
             self.default_host_warning,
             self.default_disk_warning
         )
         print "-c\t\tCRITICAL threshold"
-        print "\t\t(Default host: %i, disk: %iGB)" % (
+        print "\t\tdefault: %i (host), %iGB (disk)" % (
             self.default_host_critical,
             self.default_disk_critical
         )
