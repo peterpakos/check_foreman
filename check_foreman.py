@@ -19,7 +19,7 @@ except ImportError as err:
 
 # Global config class (uninstantiated)
 class config:
-    app_version = "1.1"
+    app_version = "1.2"
     host_warning = 150
     host_critical = 200
     disk_warning = 100
@@ -279,7 +279,7 @@ class Main(object):
                     code = 3
 
                 mlist.append(
-                    "%s: %.2fGB/%.2fGB/%.2fGB" % (ds, free, used, size)
+                    "%s: %.2fGB (%.2fGB/%.2fGB)" % (ds, free, used, size)
                 )
 
             if len(datastores) > 0:
