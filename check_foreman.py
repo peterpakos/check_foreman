@@ -12,8 +12,6 @@ try:
     import json
     import getopt
     import os
-    from requests import session
-    from lxml import html
 except ImportError as err:
     print "Import Error: %s" % err
     sys.exit(3)
@@ -21,7 +19,7 @@ except ImportError as err:
 
 # Global config class (uninstantiated)
 class config:
-    app_version = "1.0"
+    app_version = "1.1"
     host_warning = 150
     host_critical = 200
     disk_warning = 100
@@ -37,59 +35,6 @@ class ForemanServer(object):
         self.foreman_api_url = foreman_url + '/api/v2'
         self.foreman_user = foreman_user
         self.foreman_pass = foreman_pass
-
-    def fetch_datastore_info(self):
-        payload = {
-            'authenticity_token':
-            'Zq7o/8Ap9F0uSWLTUcEx/4ezcsz+HXIQ76LoE/A7jDc=',
-            'login[login]': self.foreman_user,
-            'login[password]': self.foreman_pass
-        }
-
-        headers = {
-            'Content-Type': None,
-            'Accept': 'text/html',
-            'User-Agent': None
-        }
-
-        with session() as s:
-            try:
-                s.post(
-                    self.foreman_url + '/users/login',
-                    headers=headers,
-                    data=payload,
-                    verify=False
-                )
-            except:
-                app.die(3, "Error: Problem with logging in to Foreman UI")
-            page = s.get(
-                self.foreman_url + '/compute_profiles/1'
-                                   '/compute_resources/6-SHDC_ALM_VC'
-                                   '/compute_attributes/new',
-                headers=headers,
-                verify=False
-            )
-        tree = html.document_fromstring(page.text).getroottree()
-        stores = tree.xpath(
-            '//select[@name="compute_attribute[vm_attrs]'
-            '[volumes_attributes][0][datastore]"]/option'
-        )
-
-        datastores = {}
-        for store in stores:
-            # EQL_VSPHERE_DS1 (free: 243 GB, prov: 481 GB, total: 500 GB)
-            if "EQL_VSPHERE_" in store.text:
-                line = store.text.split()
-                datastores.update({line[0]: {
-                    'free': float(line[2]),
-                    'free_unit': line[3].replace(',', ''),
-                    'prov': float(line[5]),
-                    'prov_unit': line[6].replace(',', ''),
-                    'total': float(line[8]),
-                    'total_unit': line[9].replace(',', '')
-                }})
-
-        return datastores
 
     # Encode user:pass in headers and get json data
     def get_json_data(self, url):
@@ -127,6 +72,25 @@ class ForemanServer(object):
             return int(data['total_hosts'])
         except TypeError as err:
             app.die(3, "Unknown data type returned by remote host (%s)" % err)
+
+    # Fetch datastore info
+    def fetch_datastore_info(self):
+        url = self.foreman_api_url + \
+            "/compute_resources/6/available_storage_domains"
+        data = self.get_json_data(url)
+        datastores = {}
+        for d in data['results']:
+            name = d['name']
+            if "EQL_VSPHERE_" in name:
+                size = round(float(d['capacity']) / (1024 * 1024 * 1024), 2)
+                free = round(float(d['freespace']) / (1024 * 1024 * 1024), 2)
+                used = round(size - free, 2)
+                datastores.update({name: {
+                    'free': free,
+                    'used': used,
+                    'size': size
+                }})
+        return datastores
 
 
 # Main class
@@ -290,10 +254,13 @@ class Main(object):
         elif self.test == 'disk':
             datastores = foreman.fetch_datastore_info()
             code = -1
-            mlist = []
             status = 'UNKNOWN'
+            mlist = []
+
             for ds, v in sorted(datastores.iteritems()):
                 free = v['free']
+                used = v['used']
+                size = v['size']
                 if 0 <= free and free <= config.disk_critical:
                     if code < 2:
                         status = 'CRITICAL'
@@ -311,21 +278,23 @@ class Main(object):
                     status = 'UNKNOWN'
                     code = 3
 
-                mlist.append("%s: %.0fGB" % (ds, free))
+                mlist.append(
+                    "%s: %.2fGB/%.2fGB/%.2fGB" % (ds, free, used, size)
+                )
 
             if len(datastores) > 0:
                 message = "%s - %s" % (status, ', '.join(mlist))
                 mlist = []
                 for ds, v in sorted(datastores.iteritems()):
                     free = v['free']
-                    total = v['total']
-                    mlist.append("'%s'=%.0fGB;%i;%i;%i;%i" % (
+                    size = v['size']
+                    mlist.append("'%s'=%.2fGB;%i;%i;%i;%.2f" % (
                         ds,
                         free,
                         config.disk_warning,
                         config.disk_critical,
                         0,
-                        total
+                        size
                     ))
                 message = "%s|%s" % (
                     message,

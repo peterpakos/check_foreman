@@ -1,6 +1,6 @@
 This Nagios plug-in is made to monitor the Foreman server by accessing both its UI and API.
 
-    foreman.py 1.0
+    foreman.py 1.1
     Usage: foreman.py [OPTIONS]
 
     AVAILABLE OPTIONS:
