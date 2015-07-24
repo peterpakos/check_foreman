@@ -19,7 +19,7 @@ except ImportError as err:
 
 # Global config class (uninstantiated)
 class config:
-    app_version = "1.2"
+    app_version = "1.3"
     host_warning = 150
     host_critical = 200
     disk_warning = 100
@@ -261,6 +261,7 @@ class Main(object):
                 free = v['free']
                 used = v['used']
                 size = v['size']
+                perc = round(used / size * 100, 2)
                 if 0 <= free and free <= config.disk_critical:
                     if code < 2:
                         status = 'CRITICAL'
@@ -279,11 +280,12 @@ class Main(object):
                     code = 3
 
                 mlist.append(
-                    "%s: %.2fGB (%.2fGB/%.2fGB)" % (ds, free, used, size)
+                    "%s: %.2fGB FREE, %.2f%% USED (%.2fGB/%.2fGB)" % (
+                        ds, free, perc, used, size)
                 )
 
             if len(datastores) > 0:
-                message = "%s - %s" % (status, ', '.join(mlist))
+                message = "%s - Monitored datastores:\n%s" % (status, '\n'.join(mlist))
                 mlist = []
                 for ds, v in sorted(datastores.iteritems()):
                     free = v['free']
