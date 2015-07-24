@@ -280,7 +280,7 @@ class Main(object):
                     code = 3
 
                 mlist.append(
-                    "%s: %.2fGB FREE, %.2f%% USED (%.2fGB/%.2fGB)" % (
+                    "- %s:\t%.2fGB FREE\t%.2f%% USED (%.2fGB/%.2fGB)" % (
                         ds, free, perc, used, size)
                 )
 
