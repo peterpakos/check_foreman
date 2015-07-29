@@ -19,7 +19,7 @@ except ImportError as err:
 
 # Global config class (uninstantiated)
 class config:
-    app_version = "1.3"
+    app_version = "15.7.29"
     host_warning = 150
     host_critical = 200
     disk_warning = 100
@@ -47,7 +47,7 @@ class ForemanServer(object):
         try:
             result = urllib2.urlopen(request)
         except urllib2.HTTPError as err:
-            app.die(3, "HTTP Error Code %s (%s)" % (err.code, err.reason))
+            app.die(3, "HTTP Error Code %s" % err.code)
         except urllib2.URLError as err:
             app.die(3, "URL Error (%s)" % err.reason)
         except ValueError:
