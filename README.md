@@ -1,4 +1,4 @@
-## This Nagios plug-in is made to monitor the Foreman server by accessing both its UI and API.
+# Nagios plug-in for monitoring Foreman
 ```
 check_foreman.py 15.7.29
 Usage: check_foreman.py [OPTIONS]
